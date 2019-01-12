@@ -1,0 +1,12 @@
+{
+  "name": "web.verify.coq",
+  "version": "0.0.1",
+  "description": "",
+  "main": "src/sample.html",
+  "dependencies": {
+    "jquery": "^3.3.1",
+    "prelude-ls-browser": "git+https://github.com/franklx/prelude-ls.git"
+  },
+  "author": "",
+  "license": "ISC"
+}

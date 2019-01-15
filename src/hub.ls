@@ -2,11 +2,18 @@
 
 class CoqAssistant
 
+  ->
+    @pprint = new PrettyPrint
+    @testbed = $('#testbed')
+
   attach: (coq-manager) ->
     coq-manager.coq.observers.push @
+    @
 
   coqGoalInfo: (sid, pp, east) ->
-    console.log Ast.of-east(east).toString!
+    ast = Ast.of-east(east)
+    console.log ast.toString!
+    @testbed.empty!append @pprint.format(ast)
 
 
 

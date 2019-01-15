@@ -15,7 +15,10 @@
 
     <script src="./lang/tree.ls.js"></script>
     <script src="./lang/ast.ls.js"></script>
+    <script src="./lang/pretty.ls.js"></script>
     <script src="./hub.ls.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="./coq.css">
 
     <title>jsCoq - The Coq Theorem Prover Online IDE</title>
   </head>
@@ -23,30 +26,39 @@
 <body>
   <div id="ide-wrapper" class="toggled">
   <div id="code-wrapper">
-  <div id="document">
+  <div id="document-W">
     <textarea id="workspace">
-Check nat.
+Require Import Bool.
 
-Theorem plus_two : forall n : nat, n + 2 = S (S n).
+Theorem a (b : nat) :
+  forall f (b : nat), f (f b) = f b.
+
+Theorem plus_two : forall n : nat, n + (1 + 1) = S (S n).
 Proof.
   induction n.
   - simpl. reflexivity.
   - simpl. rewrite IHn. reflexivity.
 Qed.
 </textarea>
-  </div> <!-- /#document -->
+  <div id="testbed"></div>
+  </div> <!-- /#document-W -->
   </div> <!-- /#code-wrapper -->
   </div> <!-- /#ide-wrapper -->
 
   <script src="../node_modules/jscoq/ui-js/jscoq-loader.js" type="text/javascript"></script>
   <script type="text/javascript">
 
+  /*
+    var fs = require('fs');
+    var txt = fs.readFileSync('/Users/corwin/var/ext/coq/libs/hahn/HahnBase.v', 'utf-8');
+    $('#workspace').val(txt);
+  */
     var jscoq_ids  = ['workspace'];
     var jscoq_opts = {
         prelude:   true,
         base_path: '../node_modules/jscoq/',
-        init_pkgs: ['init'],
-        all_pkgs:  ['init', 'math-comp'],
+        init_pkgs: ['init', 'coq-base', 'coq-arith', 'coq-reals'],
+        all_pkgs:  ['init', 'math-comp', 'coq-base', 'coq-arith', 'coq-reals'],
         editor: {keyMap: 'default'}
     };
 

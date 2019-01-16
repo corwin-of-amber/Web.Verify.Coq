@@ -49,6 +49,14 @@ class InfixNotation extends Notation
   mkop: ->
     $ '<span>' .add-class <[notation infix-op]> .append @operator.clone!
 
+class PrefixNotation extends Notation
+  (@operator, prec) -> super prec
+  _format: (ast, recurse, at) ->
+    r = recurse(ast.subtrees[*-1])
+    cat [@mkop!, at(r, @prec)]
+  mkop: ->
+    $ '<span>' .add-class <[notation prefix-op]> .append @operator.clone!
+
 class QuantifierNotation extends Notation
   (@quantifier, outer-prec, @inner-prec) ->
     @body-prec = {left: @inner-prec.left, right: outer-prec.right}
@@ -79,6 +87,9 @@ class PrettyPrint
       'O': new NatNumeralNotation({left: 0, right: 0})
       'Coq.Init.Nat.add': new InfixNotation(ctxt(" + "), {left: 45, right: 45})
       'Coq.Init.Logic.eq': new InfixNotation(ctxt(" = "), {left: 70, right: 70})
+      'Coq.Init.Logic.not': new PrefixNotation(ctxt("¬"), {left: 2, right: 50})
+
+    @open-namespaces = new OpenNamespaces([['JsCoq'], ['Coq', 'Init']])
   
   format: (ast, ctx=[]) ->
     if ast.root == 'forall'
@@ -88,8 +99,11 @@ class PrettyPrint
       nota.format(ast, (~> @format(it, ctx)), @~parenthesize)
     else if ast.root == '~'
       @format(@get-rel(ast, ctx), ctx)
-    else if ast.is-leaf!
-      $ '<span>' .add-class 'identifier' .append ctxt(ast.root)
+    else if ast.is-leaf! && ast.root
+      caption = if ast.root instanceof Identifier then @open-namespaces.dequalify(ast.root) else ast.root
+      tags = if ast.root instanceof Identifier then ast.root.tags else void
+      $ '<span>' .add-class 'identifier' .append ctxt(caption.toString!)
+        if tags then ..attr 'data-tags' tags
         ..prec = {left: 0, right: 0}
     else
       $ '<span>' .add-class 'stub' .append ctxt("{"), ctxt(ast.toString!), ctxt("}")
@@ -122,6 +136,17 @@ class PrettyPrint
 
   get-var: (ast) ->
     if ast.root == ':' then ast.subtrees[0] else ast
+
+
+class OpenNamespaces
+  (@ns-list) ->
+
+  dequalify: (ident) ->
+    prefix = ident.prefix
+    for ns in @ns-list
+      if prefix[til ns.length] === ns
+        return new Identifier(prefix[ns.length til], ident.label)
+    ident
 
 
 

@@ -30,6 +30,18 @@
     <textarea id="workspace">
 Require Import Bool.
 
+
+(** Coersion of bools into Prop *)
+Coercion is_true (b : bool) : Prop := b = true.
+
+(** Hints for auto *)
+Lemma hahn__true_is_true : true.
+Proof. reflexivity. Qed.
+
+Lemma hahn__not_false_is_true : ~ false.
+Proof. discriminate. Qed.
+
+
 Theorem a (b : nat) :
   forall f (b : nat), f (f b) = f b.
 
@@ -57,8 +69,9 @@ Qed.
     var jscoq_opts = {
         prelude:   true,
         base_path: '../node_modules/jscoq/',
-        init_pkgs: ['init', 'coq-base', 'coq-arith', 'coq-reals'],
+        init_pkgs: ['init'/*, 'coq-base', 'coq-arith'*/],
         all_pkgs:  ['init', 'math-comp', 'coq-base', 'coq-arith', 'coq-reals'],
+        implicit_libs: true,
         editor: {keyMap: 'default'}
     };
 

@@ -1,3 +1,8 @@
 node_modules
 /npm-link.sh
 *.ls.js
+.*.sw?
+*.aux
+*.glob
+*.vo
+*.vio

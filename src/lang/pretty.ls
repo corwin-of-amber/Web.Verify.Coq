@@ -21,12 +21,14 @@ class AppNotation extends Notation
     cat [at(v.0, @prec)] ++ v[1 to].map ~> ctxt(" ").add(at(it, @arg-prec))
 
 class NatNumeralNotation extends Notation
+  @O = new Identifier([], 'O')
+  @S = new Identifier([], 'S')
   _format: (ast, recurse, at) ->
     v = ast
     val = 0
-    while v.root == '@' && v.subtrees[0].is-leaf! && v.subtrees[0].root == 'S'
+    while v.root == '@' && v.subtrees[0].is-leaf! && @@S.equals(v.subtrees[0].root)
       v = v.subtrees[1] ; val += 1
-    if v.root == 'O'
+    if @@O.equals(v.root)
       @mkval(val)
         ..prec = {left: 0, right: 0}
     else

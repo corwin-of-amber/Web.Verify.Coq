@@ -34,6 +34,9 @@ class Identifier
 
   toString: -> [...@prefix, @label].join(".")
 
+  equals: (other) ->
+    other instanceof Identifier && \
+      @prefix === other.prefix && @label === other.label
 
 
 export Ast, Identifier

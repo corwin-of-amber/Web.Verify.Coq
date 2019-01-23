@@ -10,6 +10,8 @@ class Notation
 
 ctxt = -> $(document.createTextNode(it))
 cat = -> it.reduce (x,y) -> x.add(y)
+cat-sep = (jdoms, sep) -> jdoms.reduce (x,y) -> x.add(sep.clone!).add(y)
+
 
 class AppNotation extends Notation
   ->
@@ -39,6 +41,7 @@ class NatNumeralNotation extends Notation
     $ '<span>' .add-class <[notation nat prefix-val-plus]> .append @mkval(val)
     .append ($ '<span>' .add-class 'infix-op' .text '+')
 
+
 class InfixNotation extends Notation
   (@operator, prec, assoc='none') ->
     super prec
@@ -51,6 +54,7 @@ class InfixNotation extends Notation
   mkop: ->
     $ '<span>' .add-class <[notation infix-op]> .append @operator.clone!
 
+
 class PrefixNotation extends Notation
   (@operator, prec) -> super prec
   _format: (ast, recurse, at) ->
@@ -59,18 +63,49 @@ class PrefixNotation extends Notation
   mkop: ->
     $ '<span>' .add-class <[notation prefix-op]> .append @operator.clone!
 
+
 class QuantifierNotation extends Notation
-  (@quantifier, outer-prec, @inner-prec) ->
+  (@quantifier, outer-prec, @inner-prec, @multivar-prec, @arrow-notation) ->
     @body-prec = {left: @inner-prec.left, right: outer-prec.right}
     super outer-prec
+
   _format: (ast, recurse, at) ->
-    va = recurse(ast.subtrees[0])
-    body = recurse(ast.subtrees[1])
-    cat [@mkop!, at(va, @inner-prec), @mksep!, at(body, @body-prec)]
+    [va, body] = ast.subtrees
+    if @is-arrow(ast)
+      @arrow-notation.format(new Tree('->', [va.subtrees[1], body]), recurse, at)
+    else
+      [more-vars, body] = @collect(body)
+      vars = [va, ...more-vars].map recurse ; body = recurse(body)
+      vars-prec = if vars.length > 1 then @multivar-prec else @inner-prec
+      cat [@mkop!, (@var-list [at(x, vars-prec) for x in vars]), @mksep!, at(body, @body-prec)]
+
+  is-arrow: (ast) ->
+    [va, body] = ast.subtrees
+    @arrow-notation? && va.root == ':' && !@has-rel(body, 1)
+  has-rel: (ast, rel-index) ->
+    if ast.root == '~'
+      ast.subtrees[0].root == rel-index
+    else 
+      if ast.root == 'forall' then rel-index += 1
+      ast.subtrees.some ~> @has-rel it, rel-index
+  collect: (ast) ->
+    if ast.root == 'forall' && !@is-arrow(ast)
+      [va, body] = ast.subtrees
+      [more-vars, body] = @collect(body)
+      [[va, ...more-vars], body]
+    else
+      [[], ast]
+
+  var-list: (jdoms) ->
+    $ '<span>' .add-class <[quantifier-vars]> .append cat-sep(jdoms, @mkvarsep!)
+
   mkop: ->
     $ '<span>' .add-class <[notation prefix-quantifier]> .append @quantifier.clone!
   mksep: ->
     $ '<span>' .add-class <[notation sep-quantifier-comma]> .text ", "
+  mkvarsep: ->
+    $ '<span>' .add-class <[notation sep-quantifier-space]> .text " "
+
 
 class LiteralNotation extends Notation
   (@literal, prec) -> super prec
@@ -78,11 +113,15 @@ class LiteralNotation extends Notation
     $ '<span>' .add-class <[notation literal]> .append @literal.clone!
 
 
+/**
+ * Main pretty-printing entry point.
+ */
 class PrettyPrint
   ->
     @notations = 
       '@': new AppNotation({left: 1, right: 1})
-      'forall': new QuantifierNotation(ctxt("∀ "), {left: 0, right: 99}, {left: 90, right: 90})
+      'forall': new QuantifierNotation(ctxt("∀ "), {left: 0, right: 99}, {left: 90, right: 90}, {left: 1, right: 1},
+                                       new InfixNotation(ctxt(" → "), {left: 75, right: 75}))
       ':': new InfixNotation(ctxt(" : "), {left: 89, right: 89})
       'Coq.Init.Datatypes.nat': new LiteralNotation(ctxt("ℕ"), {left: 0, right: 0})
       'S': new NatNumeralNotation({left: 45, right: 45})
@@ -94,13 +133,15 @@ class PrettyPrint
     @open-namespaces = new OpenNamespaces([['JsCoq'], ['Coq', 'Init']])
   
   format: (ast, ctx=[]) ->
-    if ast.root == 'forall'
-      ctx = ctx ++ @get-var(ast.subtrees[0])
+    @resolve-rels ast, ctx
+    @_format(ast)
 
+  _format: (ast) ->
     if (nota = @get-notation(ast))?
-      nota.format(ast, (~> @format(it, ctx)), @~parenthesize)
+      nota.format(ast, @~_format, @~parenthesize)
     else if ast.root == '~'
-      @format(@get-rel(ast, ctx), ctx)
+      /**/ assert ast.bound-to? /**/
+      @_format(ast.bound-to)
     else if ast.is-leaf! && ast.root
       caption = if ast.root instanceof Identifier then @open-namespaces.dequalify(ast.root) else ast.root
       tags = if ast.root instanceof Identifier then ast.root.tags else void
@@ -109,6 +150,17 @@ class PrettyPrint
         ..prec = {left: 0, right: 0}
     else
       $ '<span>' .add-class 'stub' .append ctxt("{"), ctxt(ast.toString!), ctxt("}")
+
+  resolve-rels: (ast, ctx=[]) ->
+    if ast.root == '~'
+      ast.bound-to = @get-rel(ast, ctx)
+    else if ast.root == 'forall'
+      /**/ assert.equal 2 ast.subtrees.length /**/
+      @resolve-rels ast.subtrees[0], ctx
+      @resolve-rels ast.subtrees[1], ctx ++ [@get-var(ast.subtrees[0])]
+    else
+      for s in ast.subtrees
+        @resolve-rels s, ctx
 
   parenthesize: (jdom, prec) ->
     eprec = jdom.prec ? {left: 99, right: 99}

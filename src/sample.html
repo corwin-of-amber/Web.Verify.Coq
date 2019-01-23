@@ -28,29 +28,24 @@
   <div id="code-wrapper">
   <div id="document-W">
     <textarea id="workspace">
-Require Import Bool.
-
-
-(** Coersion of bools into Prop *)
-Coercion is_true (b : bool) : Prop := b = true.
-
-(** Hints for auto *)
-Lemma hahn__true_is_true : true.
-Proof. reflexivity. Qed.
-
-Lemma hahn__not_false_is_true : ~ false.
-Proof. discriminate. Qed.
-
 
 Theorem a (b : nat) :
-  forall f (b : nat), f (f b) = f b.
+  forall A f (b : A), f (f b) = f b.
+Proof.
+  intros f b1.
+Admitted.
 
-Theorem plus_two : forall n : nat, n + (1 + 1) = S (S n).
+Theorem plus_two : forall n : nat, n + 2 = S (S n).
 Proof.
   induction n.
   - simpl. reflexivity.
   - simpl. rewrite IHn. reflexivity.
 Qed.
+
+Require Import Arith List.
+Import ListNotations.
+
+Check [].
 </textarea>
   <div id="testbed"></div>
   </div> <!-- /#document-W -->

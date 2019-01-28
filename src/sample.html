@@ -16,6 +16,7 @@
     <script src="./lang/tree.ls.js"></script>
     <script src="./lang/ast.ls.js"></script>
     <script src="./lang/pretty.ls.js"></script>
+    <script src="./extra-pkgs.ls.js"></script>
     <script src="./hub.ls.js"></script>
 
     <link rel="stylesheet" type="text/css" href="./coq.css">
@@ -29,7 +30,7 @@
   <div id="document-W">
     <textarea id="workspace">
 
-Theorem a (b : nat) :
+Theorem foolishness (b : nat) :
   forall A f (b : A), f (f b) = f b.
 Proof.
   intros f b1.

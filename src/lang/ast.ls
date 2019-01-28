@@ -15,6 +15,9 @@ class Ast extends Tree
       | _ => '?'
     if root-id == '~'
       new Ast(root-id, [new Ast(root[1])])
+    else if root-id == '?'
+      new Ast(root-id, [])
+        ..east = east
     else
       new Ast(root-id, subtrees.map ~> @of-east it)
 

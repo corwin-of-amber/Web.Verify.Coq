@@ -33,7 +33,11 @@ class NatNumeralNotation extends Notation
     if @@O.equals(v.root)
       @mkval(val)
         ..prec = {left: 0, right: 0}
+    else if v.is-leaf!
+      /**/ assert.equal 0, val /**/
+      @mkval "(+1)"
     else
+      /**/ assert.notEqual v, ast /**/
       cat [@mkplus(val), at(recurse(v), @prec)]
   mkval: (val) ->
     $ '<span>' .add-class <[notation nat numeral]> .text ""+val
@@ -71,7 +75,7 @@ class QuantifierNotation extends Notation
 
   _format: (ast, recurse, at) ->
     [va, body] = ast.subtrees
-    if @is-arrow(ast)
+    if @arrow-notation? && @is-arrow(ast)
       @arrow-notation.format(new Tree('->', [va.subtrees[1], body]), recurse, at)
     else
       [more-vars, body] = @collect(body)
@@ -85,9 +89,11 @@ class QuantifierNotation extends Notation
   has-rel: (ast, rel-index) ->
     if ast.root == '~'
       ast.subtrees[0].root == rel-index
-    else 
-      if ast.root == 'forall' then rel-index += 1
-      ast.subtrees.some ~> @has-rel it, rel-index
+    else if ast.root == 'forall' || ast.root == 'lambda'
+      @has-rel(ast.subtrees[0], rel-index) || \
+      (ast.subtrees[1 to].some ~> @has-rel(it, rel-index + 1))
+    else
+      ast.subtrees.some ~> @has-rel(it, rel-index)
   collect: (ast) ->
     if ast.root == 'forall' && !@is-arrow(ast)
       [va, body] = ast.subtrees
@@ -113,6 +119,15 @@ class LiteralNotation extends Notation
     $ '<span>' .add-class <[notation literal]> .append @literal.clone!
 
 
+class IdentifierNotation extends Notation
+  _format: (ast, recurse) ->
+    caption = ast.root.toString!
+    tags = if ast.root instanceof Identifier then ast.root.tags else void
+    $ '<span>' .add-class 'identifier' .append ctxt(caption)
+      if tags then ..attr 'data-tags' tags
+
+
+
 /**
  * Main pretty-printing entry point.
  */
@@ -121,7 +136,8 @@ class PrettyPrint
     @notations = 
       '@': new AppNotation({left: 1, right: 1})
       'forall': new QuantifierNotation(ctxt("∀ "), {left: 0, right: 99}, {left: 90, right: 90}, {left: 1, right: 1},
-                                       new InfixNotation(ctxt(" → "), {left: 75, right: 75}))
+                                       new InfixNotation(ctxt(" → "), {left: 75, right: 75}, 'right'))
+      'lambda': new QuantifierNotation(ctxt("λ "), {left: 0, right: 99}, {left: 90, right: 90}, {left: 1, right: 1}),
       ':': new InfixNotation(ctxt(" : "), {left: 89, right: 89})
       'Coq.Init.Datatypes.nat': new LiteralNotation(ctxt("ℕ"), {left: 0, right: 0})
       'S': new NatNumeralNotation({left: 45, right: 45})
@@ -130,7 +146,9 @@ class PrettyPrint
       'Coq.Init.Logic.eq': new InfixNotation(ctxt(" = "), {left: 70, right: 70})
       'Coq.Init.Logic.not': new PrefixNotation(ctxt("¬"), {left: 2, right: 50})
 
-    @open-namespaces = new OpenNamespaces([['JsCoq'], ['Coq', 'Init']])
+    @ident = new IdentifierNotation({left: 0, right: 0})
+
+    @open-namespaces = new OpenNamespaces([['JsCoq'], ['Coq', 'Init', 'Datatypes'], ['Coq', 'Init']])
   
   format: (ast, ctx=[]) ->
     @resolve-rels ast, ctx
@@ -143,18 +161,14 @@ class PrettyPrint
       /**/ assert ast.bound-to? /**/
       @_format(ast.bound-to)
     else if ast.is-leaf! && ast.root
-      caption = if ast.root instanceof Identifier then @open-namespaces.dequalify(ast.root) else ast.root
-      tags = if ast.root instanceof Identifier then ast.root.tags else void
-      $ '<span>' .add-class 'identifier' .append ctxt(caption.toString!)
-        if tags then ..attr 'data-tags' tags
-        ..prec = {left: 0, right: 0}
+      @ident.format(@dequalify(ast), @~_format, @~parenthesize)
     else
       $ '<span>' .add-class 'stub' .append ctxt("{"), ctxt(ast.toString!), ctxt("}")
 
   resolve-rels: (ast, ctx=[]) ->
     if ast.root == '~'
       ast.bound-to = @get-rel(ast, ctx)
-    else if ast.root == 'forall'
+    else if ast.root == 'forall' || ast.root == 'lambda'
       /**/ assert.equal 2 ast.subtrees.length /**/
       @resolve-rels ast.subtrees[0], ctx
       @resolve-rels ast.subtrees[1], ctx ++ [@get-var(ast.subtrees[0])]
@@ -169,6 +183,13 @@ class PrettyPrint
         ..prec = {left: 0, right: 0}
     else
       jdom
+
+  dequalify: (ast) ->
+    /**/ assert ast.is-leaf! /**/
+    if ast.root instanceof Identifier 
+      new Ast(@open-namespaces.dequalify(ast.root))
+    else
+      ast
 
   get-notation: (ast) ->
     head-symb = 

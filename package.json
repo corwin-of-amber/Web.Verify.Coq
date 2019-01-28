@@ -5,6 +5,7 @@
   "main": "src/sample.html",
   "dependencies": {
     "jquery": "^3.3.1",
+    "jszip": "^3.1.5",
     "prelude-ls-browser": "git+https://github.com/franklx/prelude-ls.git"
   },
   "author": "",

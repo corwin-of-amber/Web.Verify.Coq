@@ -1,15 +1,24 @@
 require! fs
+require! path
 JSZip = require('jszip')
 
 
 
 class ExtraPackages
   (@coq) ->
-    @pkg-names = ['hahn', 'sflib', 'paco']
+    @pkg-names = ['hahn', 'sflib', 'paco', 'promising-coq', 'imm-base']
+    @search-path = ["coq-pkgs", "node_modules/jscoq/coq-pkgs"]
+
+  resolve: (pkg) ->
+    for pe in @search-path
+      pkg-path = path.join(pe, "#{pkg}.coq-pkg")
+      if fs.existsSync(pkg-path)
+        return pkg-path
+    throw new Error("package not found: '#{pkg}'")
 
   load: ->
     for let pkg in @pkg-names
-      fs.readFile "coq-pkgs/#{pkg}.coq-pkg" (err, data) ~>
+      fs.readFile @resolve(pkg), (err, data) ~>
         if err
           console.error err
         else

@@ -1,7 +1,14 @@
 require! assert
 
+tree =
+  # Hack to run in Node.js as well
+  if typeof exports == 'object' && typeof module != 'undefined'
+    require './tree'
+  else {Tree}
 
-class Ast extends Tree
+
+
+class Ast extends tree.Tree
 
   @of-east = (east) ->
     assert.equal east[0], 'AstNode'
@@ -23,13 +30,8 @@ class Ast extends Tree
 
   @identifier-from-element = (el) ->
     assert.equal el[0], 'Identifier'
-    @identifier-from-kername(el[1])
+    Identifier.of-kername(el[1])
       ..tags = el[2]
-
-  @identifier-from-kername = ([kername, modpath, dirpath, label]) ->
-    assert.equal kername, 'KerName'
-    assert.equal modpath[0], 'MPfile'
-    new Identifier([...modpath[1]].reverse!, label)
 
 
 class Identifier
@@ -40,6 +42,16 @@ class Identifier
   equals: (other) ->
     other instanceof Identifier && \
       @prefix === other.prefix && @label === other.label
+
+  @of-kername = ([kername, modpath, dirpath, label]) ->
+    assert.equal kername, 'KerName'
+    modsuff =
+      while (modpath[0] == 'MPdot')
+        modpath[2]
+          ..; modpath = modpath[1]
+    assert.equal modpath[0], 'MPfile'
+    new Identifier([...modpath[1]].reverse! ++ modsuff, label)
+
 
 
 export Ast, Identifier

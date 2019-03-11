@@ -3,6 +3,8 @@ jscoq_worker = require 'jscoq/coq-js/jscoq_worker'
 jscoq = require 'jscoq/coq-js/jscoq'
 format-pprint = require 'jscoq/ui-js/format-pprint'
 
+ast = require './lang/ast'
+
 
 
 class HeadlessWorker extends jscoq.CoqWorker
@@ -19,28 +21,76 @@ class HeadlessWorker extends jscoq.CoqWorker
 
 class HeadlessManager
   (@coq) ->
+    @coq ?= new HeadlessWorker
+    @coq.observers.push @
+
     @pprint = new format-pprint.FormatPrettyPrint
+
+    @doc = [{text: s} for s in [
+      "Require Arith."
+    ]]
+    @inspect-prefix = ["Coq", "Arith"]
+      
+    /*
+      "From Coq Require Import Init.Prelude Unicode.Utf8."
+      "From Coq Require Import ssreflect ssrfun ssrbool."
+      "From mathcomp Require Import eqtype ssrnat div prime."
+      "Lemma prime_above m : {p | m < p & prime p}."
+      "have /pdivP[p pr_p p_dv_m1]: 1 < m`! + 1 by rewrite addn1 ltnS fact_gt0."
+      "exists p => //; rewrite ltnNge; apply: contraL p_dv_m1 => p_le_m."
+      "by rewrite dvdn_addr ?dvdn_fact ?prime_gt0 // gtnNdvd ?prime_gt1."
+      "Qed."
+      ]]*/
+    
+    /*
+      "Require Import Coq.Init.Prelude."
+      "Require Import Arith."
+      "Check nat."
+      "From hahn Require Import Hahn."
+      "Load \"coq-pkgs/imm/src/hardware/Arm-redacted.v\"."
+    ]]*/
+
+  find-sid: (sid) ->
+    for stm in @doc
+      if stm.sid == sid then return stm
+
+  find-sid-index: (sid) ->
+    for stm, i in @doc
+      if stm.sid == sid then return i
 
   coqReady: (sid) ->
     require! fs
-    fs.readFile "proofs/Simple.vo" (err, data) ~>
-      if err
-        console.error err
-      else
-        @coq.put "/lib/Simple.vo", data
+    @coq.reassureLoadPath []
     if sid == 1
-      @coq.add 1, 2, 'Check Prop.'
+      @doc[0]
+        ..sid = 2
+        ..added = true
+        @coq.add sid, ..sid, ..text, true
 
   coqCoqExn: (, , msg) ->
-    console.error @pprint.pp2Text(msg)
+    console.error "[Exception] #{@pprint.pp2Text(msg)}"
 
   coqLog: ([lvl], msg) ->
-    console.log @pprint.pp2Text(msg)
+    console.log "[#{lvl}] #{@pprint.pp2Text(msg)}"
 
   feedProcessingIn: (sid) ->
+    stm = @find-sid(sid)
+    if stm?
+      stm.executed = true
 
   feedProcessed: (sid) ->
     console.log "Processed", sid
+
+    idx = @find-sid-index(sid)
+
+    if idx?
+      stm = @doc[idx + 1]
+      if stm? && !stm.added
+        stm.sid = sid + 1
+        stm.added = true
+        @coq.add sid, stm.sid, stm.text, true
+      if !stm? && @inspect-prefix?
+        @coq.sendCommand ["Inspect", ["ModulePrefix", @inspect-prefix]]
 
   feedMessage: (sid, [lvl], loc, msg) ->
     console.log '-' * 40
@@ -52,14 +102,54 @@ class HeadlessManager
   feedFileLoaded: ->
 
   coqAdded: (sid) ->
-    if sid == 2
-      @coq.exec 2
-      @coq.reassureLoadPath []
-      @coq.add 2, 3, "Require Simple.", true
+    stm = @find-sid(sid)
+    if stm?
+      if !stm.executed
+        setImmediate ~> @coq.exec sid
+  
+  coqGoalInfo: (sid, goals) ->
+    console.log "Goals (sid=#{sid})"
+    console.log @pprint.pp2Text(goals)
+
+  coqSearchResults: (bunch) ->
+    console.log "Search results (#{bunch.length} entries)."
+    @search-results = [ast.Identifier.of-kername(kn) for [kn,ty] in bunch]
+    if @inspect-prefix?
+      out-fn = "#{@inspect-prefix.join('.')}.symb.json"
+      fs.writeFileSync out-fn, JSON.stringify({lemmas: @search-results})
 
 
-coq = new HeadlessWorker
-coq.observers.push new HeadlessManager(coq)
+
+class CoqProject
+  (@filename) ->
+    if fs.statSync(@filename).isDirectory!
+      @base-dir = @filename
+      @filename = path.join @base-dir, '_CoqProject'
+    else
+      @base-dir = path.dirname(@filename)
+    @_text = fs.readFileSync(@filename, 'utf-8')
+    @load-path = []
+      for line in @_text.split(/\n+/)
+        if (mo = /\s*-R\s+(\S+)\s+(\S+)/.exec(line))
+          ..push ...@recursive(mo.2.split("."), path.join(@base-dir, mo.1))
+
+  recursive: (modpath, dir) ->
+    mods = find.dirSync(dir) \
+               .map(-> path.relative(dir, it).split("/")) \
+               .filter(@~is-valid-modpath)
+    [[modpath ++ m, [dir, ...m, '.']] for m in [[], ...mods]]
+
+  is-valid-modpath: (modpath) ->
+    modpath.every(@~is-valid-identifier)
+
+  is-valid-identifier: (name) ->
+    /^[a-zA-Z_][a-zA-Z_0-9]*$/.exec(name)?
+
+
+#coq = new HeadlessWorker
+#coq.observers.push new HeadlessManager(coq)
+
+coq = new HeadlessManager
 
 bare-minimum = ["Coq/ltac/ltac_plugin.cmo", "Coq/ltac/tauto_plugin.cmo", 
                 "Coq/syntax/nat_syntax_plugin.cmo", 
@@ -67,21 +157,23 @@ bare-minimum = ["Coq/ltac/ltac_plugin.cmo", "Coq/ltac/tauto_plugin.cmo",
                 "Coq/firstorder/ground_plugin.cmo"]
 
 require! fs
+require! path
 require! find
 
 COQPKGS = 'node_modules/jscoq/coq-pkgs'
 
-find.eachfile /\.cmo$/, "#COQPKGS/Coq", coq~register
+COQPROJS = [new CoqProject('coq-pkgs/imm')]
+
+find.eachfile /\.cmo$/, "#COQPKGS/Coq", coq.coq~register
 .end ->
-  coq.init(true, [], [
-           [[], ["proofs"]], 
-           [["Coq", "ltac"],           [COQPKGS]]
-           [["Coq", "syntax"],         [COQPKGS]]
-           [["Coq", "cc"],             [COQPKGS]]
-           [["Coq", "firstorder"],     [COQPKGS]]
-           [["Coq", "Init"],           [COQPKGS]]
-           ])
+  COQLIB = find.dirSync("#COQPKGS/Coq") \
+               .map(-> path.relative(COQPKGS, it).split("/"))
+  MATHCOMPLIB = find.dirSync("#COQPKGS/mathcomp") \
+               .map(-> path.relative(COQPKGS, it).split("/"))
+  LIB = COQLIB ++ MATHCOMPLIB
+  coq.coq.init({implicit_libs: true, stm_debug: false}, [], [[[], ['.']]] ++ \
+    [[mod, [COQPKGS]] for mod in LIB].concat(...COQPROJS.map (.load-path)))
 
 
-export HeadlessWorker, coq
+export HeadlessWorker, coq, COQPROJS
 

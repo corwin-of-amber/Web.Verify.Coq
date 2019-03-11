@@ -9,12 +9,8 @@ class CoqAssistant
   attach: (@coq-manager) ->
     @coq-manager.coq.observers.splice 0, 0, @
     @extra-pkgs = new ExtraPackages(@coq-manager)
+      ..load!
     @
-
-  feedProcessed: ->
-    if !@ready
-      @ready = true
-      @extra-pkgs.load!
 
   coqGoalInfo: (sid, pp, east) ->
     if east?
@@ -23,11 +19,12 @@ class CoqAssistant
         console.log ast.toString!
         @testbed.empty!append @pprint.format(ast)
   
-  coqSearchResults: (results) ->
+  show-search-results: (results) ->
     @testbed.empty!
-    for [mod-path, label, type] in results
+    for [kername, type] in results
+      ident = Identifier.of-kername(kername)
       ast = Ast.of-east(type)
-      lbl = $ '<span>' .text "#{label} : "
+      lbl = $ '<span>' .text "#{ident.label} : "
       @testbed.append ($ '<div>' .append lbl .append @pprint.format(ast))
 
 

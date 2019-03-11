@@ -33,11 +33,10 @@ class NatNumeralNotation extends Notation
     if @@O.equals(v.root)
       @mkval(val)
         ..prec = {left: 0, right: 0}
-    else if v.is-leaf!
-      /**/ assert.equal 0, val /**/
+    else if v == ast
+      /**/ assert.equal 0, val; assert @@S.equals(v.root) /**/
       @mkval "(+1)"
     else
-      /**/ assert.notEqual v, ast /**/
       cat [@mkplus(val), at(recurse(v), @prec)]
   mkval: (val) ->
     $ '<span>' .add-class <[notation nat numeral]> .text ""+val
@@ -145,6 +144,9 @@ class PrettyPrint
       'Coq.Init.Nat.add': new InfixNotation(ctxt(" + "), {left: 45, right: 45})
       'Coq.Init.Logic.eq': new InfixNotation(ctxt(" = "), {left: 70, right: 70})
       'Coq.Init.Logic.not': new PrefixNotation(ctxt("¬"), {left: 2, right: 50})
+      'Coq.Init.Logic.and': new InfixNotation(ctxt(" ∧ "), {left: 80, right: 80})
+      'Coq.Init.Logic.or':  new InfixNotation(ctxt(" ∨ "), {left: 81, right: 81})
+      'Coq.Init.Logic.iff': new InfixNotation(ctxt(" ↔︎ "), {left: 72, right: 72})
 
     @ident = new IdentifierNotation({left: 0, right: 0})
 
@@ -220,8 +222,12 @@ class OpenNamespaces
     prefix = ident.prefix
     for ns in @ns-list
       if prefix[til ns.length] === ns
-        return new Identifier(prefix[ns.length til], ident.label)
+        return @trunc(ns, ident)
     ident
+
+  trunc: (ns, ident) ->
+    new Identifier(ident.prefix[ns.length til], ident.label)
+      ..tags = ident.tags
 
 
 

@@ -1,0 +1,111 @@
+
+#header {
+    font-size: 133%;
+    padding-bottom: 0.2em;
+    margin-top: 0.2em;
+    margin-bottom: 0.15em;
+    padding-left: 0.25em;
+}
+
+#header .menu-indicator button {
+    border: none;
+    outline: none;
+    background: url(../img/lab-1.png);
+    background-size: contain;
+    height: 20px;
+    width: 20px;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+#header .menu-indicator {
+    margin-right: .3em;
+}
+
+#workspace.menu-active .menu-indicator {
+    background: #cdd;
+    outline: 7px solid #cdd;
+}
+
+#lab-menu {
+    position: absolute;
+    top: 50px;
+    left: 0px;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid black;
+    z-index: 99;
+    display: none;
+}
+
+#workspace.menu-active #lab-menu {
+    display: block;
+}
+
+#lab-menu > ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#lab-menu > ul > li {
+    padding: 5px;
+    cursor: pointer;
+}
+
+#lab-menu > ul > li:hover {
+    background: rgba(210, 210, 240, 0.5);
+}
+
+#lab-menu li > b:first-child {
+    display: inline-block;
+    min-width: 4em;
+}
+
+#lab-menu li > i {
+    font-size: 80%;
+}
+
+#lab-menu code {
+    position: relative;
+    top: -1px; /* aren't we picky */
+}
+
+#lab-menu button.revert,
+#lab-menu button.discard {
+    float: right;
+    height: 16px;
+    width: 16px;
+    background-color: transparent;
+    background-size: contain;
+    background-repeat: no-repeat;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    display: none; /* only displayed in li[data-modified] */
+}
+
+#lab-menu button.revert {
+    background-image: url(../img/revert.png);
+}
+
+#lab-menu button.discard {
+    background-image: url(../img/x.png);
+}
+
+#lab-menu li:not([data-modified]) {
+    padding-right: calc(25px + 16px);
+}
+
+#lab-menu li[data-modified] button {
+    display: inline;
+    opacity: 0.15;
+}
+
+#lab-menu li[data-modified] button:hover {
+    opacity: 0.5;
+}
+
+#lab-menu li[data-modified] button:active {
+    opacity: 0.9;
+}

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <meta name="description" content="An Online IDE for the Coq Theorem Prover" />
+
+    <script src="../node_modules/nwjs-kremlin/reload.js"></script>
+    <script type="text/javascript">
+    Reload.ignore('coq-external', 'coq-pkgs', 'ui-external');
+    Reload.ignore(/[.](tmp|ml|cmo|cmi|byte)$/)
+    </script>
+
+    <script src="../node_modules/jquery/dist/jquery.js"></script>
+    <script src="../node_modules/jszip/dist/jszip.min.js"></script>
+    <script src="../node_modules/prelude-ls-browser/browser/prelude-browser.js"></script>
+
+    <script src="./lang/tree.ls.js"></script>
+    <script src="./lang/ast.ls.js"></script>
+    <script src="./lang/pretty.ls.js"></script>
+    <script src="./extra-pkgs.ls.js"></script>
+    <script src="./hub.ls.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="./coq.css">
+    <link rel="stylesheet" type="text/css" href="./lab.css">
+
+    <title>jsCoq - The Coq Theorem Prover Online IDE</title>
+  </head>
+
+<body>
+  <div id="ide-wrapper" class="toggled">
+  <div id="code-wrapper">
+  <div id="document-W">
+    <div id="workspace">
+      <div id="header"><span class="menu-indicator"><button></button></span> 
+                       <span class="caption"></span></div>
+      <div id="lab-code">
+      </div>
+      <div id="lab-menu">
+        <ul class="resources">
+          <li data-filename="lab3/vecn.v">    <b>Lab #3:</b> <code>vecn.v</code>      <button class="revert"></button> </li>
+          <li data-filename="lab4/gcd.v">     <b>Lab #4:</b> <code>gcd.v</code>       <button class="revert"></button> </li>
+          <li data-filename="lab5/mccarthy.v"><b>Lab #5:</b> <code>mccarthy.v</code>  <button class="revert"></button> </li>
+          <li data-filename="lab6/euclid.v">  <b>Lab #6:</b> <code>euclid.v</code>    <button class="revert"></button> </li>
+          <li data-filename="lab6/hoare.v">   <b></b>        <code>hoare.v</code>     <button class="revert"></button> </li>
+        </ul>
+        <hr/>
+        <ul class="locals">
+          <li data-filename="untitled.v">     <code>untitled.v</code>                 <button class="discard"></button> </li>
+          <li class="make-new-local">+ <i>New document</i></li>
+        </ul>
+      </div>      
+    </div>
+  <div id="testbed"></div>
+  </div> <!-- /#document-W -->
+  </div> <!-- /#code-wrapper -->
+  </div> <!-- /#ide-wrapper -->
+
+  <script src="../node_modules/jscoq/ui-js/jscoq-loader.js" type="text/javascript"></script>
+  <script type="text/javascript">
+
+
+    var fs = require('fs');
+    var txt = fs.readFileSync('proofs/ssar/lab4/src/gcd.v', 'utf-8');
+
+
+    var jscoq_ids  = ['workspace'];
+    var jscoq_opts = {
+        prelude:   true,
+        base_path: '../node_modules/jscoq/',
+        init_pkgs: ['init'],
+        all_pkgs:  ['init', 'coq-base', 'coq-collections', 'coq-arith', 'coq-reals'],
+        implicit_libs: true,
+        editor: { mode: { 'company-coq': true }, keyMap: 'default' }
+    };
+
+    var lab_resources = {
+      'lab3/vecn.v':      '../proofs/ssar/lab3/src/vecn.v',
+      'lab4/gcd.v':       '../proofs/ssar/lab4/src/gcd.v',
+      'lab5/mccarthy.v':  '../proofs/ssar/lab5/src/mccarthy.v',
+      'lab6/euclid.v':    '../proofs/ssar/lab6/src/euclid.v',
+      'lab6/hoare.v':     '../proofs/ssar/lab6/src/hoare.v'
+    };
+
+    function markLocallyModified() {
+      var lfs = CmCoqProvider.getLocalFileStore();
+      for (let item of $('[data-filename]')) {
+        let fn = $(item).attr('data-filename');
+        lfs.getItem(fn).then(content => { 
+          if (content) $(item).attr('data-modified', 'true'); 
+          else $(item).removeAttr('data-modified');
+        });
+      }
+    }
+
+    function fetchResource(filename) {
+      return $.get(lab_resources[filename]);
+    }
+
+    function openResource(filename) {
+      fetchResource(filename).then(txt => coq.provider.snippets[0].load(txt, filename));
+      setCaption(filename);
+    }
+
+    function openLocal(filename, default_filename) {
+      var sp = coq.provider.snippets[0];
+      sp.openLocal(filename).then((text) => {
+        if (text === null && default_filename) sp.filename = default_filename;
+        setCaption(sp.filename);
+      });
+    }
+
+    function newUntitled() {
+      CmCoqProvider.getLocalFileStore().keys().then(names => {
+        console.log(names);
+        var i = 0;
+        do {
+          i++;
+          var fn = `untitled${i}.v`;
+        } while (names.indexOf(fn) > -1);
+        openLocal(fn);
+      });
+    }
+
+    function setCaption(filename) {
+      var li = $('#lab-menu [data-filename="'+filename+'"]')[0];
+      $('#header .caption').html(li ? $(li.childNodes).clone()
+                                    : $('<code>').text(filename))
+      .find('button').remove();
+    }
+
+    function revert(filename) {
+      CmCoqProvider.getLocalFileStore().removeItem(filename).then(() => {
+        if (coq.provider.snippets[0].filename === filename) {
+          if (lab_resources.hasOwnProperty(filename))
+            openResource(filename);
+          else
+            openLocal(filename);
+        }
+      });
+    }
+
+    function discard(filename) {
+      CmCoqProvider.getLocalFileStore().removeItem(filename).then(() => {
+        if (coq.provider.snippets[0].filename === filename)
+          openLocal('untitled.v');
+      });
+    }
+
+    function alignMenu() {
+      var bbox = $('#header')[0].getBoundingClientRect();
+      $('#lab-menu').css('top', bbox.bottom);
+    }
+
+    function setupMenu() {
+      alignMenu();
+
+      $('#header').click((ev) => {
+        alignMenu(); markLocallyModified();
+        $('#workspace').toggleClass('menu-active');
+        ev.stopPropagation();
+      });
+      $('#code-wrapper').click(() => $('#workspace').removeClass('menu-active'));
+      coq.provider.snippets[0].editor.on('change', (cm, evt) => {
+        if (evt.origin !== 'setValue')
+          $('#workspace').removeClass('menu-active')
+      });
+
+      $('#lab-menu').on('click', 'li[data-filename]', (ev) => {
+        var fn = $(ev.currentTarget).attr('data-filename'), 
+            is_resource = lab_resources.hasOwnProperty(fn),
+            is_modified = $(ev.currentTarget).attr('data-modified');
+        if (!is_resource || is_modified) openLocal(fn);
+        else openResource(fn);
+      });
+
+      $('#lab-menu').on('click', 'li[data-filename] button.revert', (ev) => {
+        ev.stopPropagation();
+        var li = $(ev.target).closest('li[data-filename]');
+        li.removeAttr('data-modified');
+        revert(li.attr('data-filename'));
+      });
+
+      $('#lab-menu').on('click', 'li[data-filename] button.discard', (ev) => {
+        ev.stopPropagation();
+        var li = $(ev.target).closest('li[data-filename]');
+        discard(li.attr('data-filename'));
+        li.remove();
+      });
+
+      $('#lab-menu').on('click', 'li.make-new-local', (ev) => {
+        newUntitled();
+      });
+    }
+
+    /* Global reference */
+    var coq, assist, last_filename = 
+      /(?:(?:^|.*;\s*)last_filename\s*\=\s*([^;]*).*$)|^.*$/.exec(document.cookie);
+
+    if (last_filename) last_filename = last_filename[1];
+
+    loadJsCoq(jscoq_opts.base_path)
+        .then( () => {
+          coq = new CoqManager(jscoq_ids, jscoq_opts);
+          markLocallyModified();
+          if (last_filename)
+            openLocal(last_filename, /*default_filename=*/'untitled.v');
+          setupMenu();
+        });
+
+    window.addEventListener('beforeunload', () => {
+      var sp = coq.provider.snippets[0];
+      document.cookie = "last_filename=" + (sp.filename || 'untitled.v');
+    });
+  </script>
+</body>
+</html>

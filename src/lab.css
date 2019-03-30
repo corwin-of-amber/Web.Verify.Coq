@@ -1,4 +1,14 @@
 
+#workspace {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#workspace > .CodeMirror {
+    flex-grow: 1;
+}
+
 #header {
     font-size: 133%;
     padding-bottom: 0.2em;

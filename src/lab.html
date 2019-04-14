@@ -19,12 +19,9 @@
 <body>
   <div id="ide-wrapper" class="toggled">
   <div id="code-wrapper">
-  <div id="document-W">
     <div id="workspace">
       <div id="header"><span class="menu-indicator"><button></button></span> 
                        <span class="caption"></span></div>
-      <div id="lab-code">
-      </div>
       <div id="lab-menu">
         <ul class="resources">
           <li data-filename="prelab/even-odd.v">  <b><i>Pre-lab:</i></b> <code>even-odd.v</code>  <button class="revert"></button> </li>
@@ -41,8 +38,6 @@
         </ul>
       </div>      
     </div>
-  <div id="testbed"></div>
-  </div> <!-- /#document-W -->
   </div> <!-- /#code-wrapper -->
   </div> <!-- /#ide-wrapper -->
 
@@ -181,6 +176,45 @@
       $('#lab-menu').on('click', 'li.make-new-local', (ev) => {
         newUntitled();
       });
+    }
+
+    function cursorLessThan(c1, c2) {
+      return (c1.line < c2.line ||
+              (c1.line === c2.line && c1.ch < c2.ch));
+    }
+
+    const emoji = {
+      ':apple:':    '🍎',
+      ':pear:':     '🍐',
+      ':lemon:':    '🍋',
+      ':banana:':   '🍌',
+      ':kiwi:':     '🥝',
+      ':tomato:':   '🍅',
+      ':eggplant:': '🍆',
+      ':corn:':     '🌽',
+      ':lolli:':    '🍭',
+      ':cookie:':   '🍪'
+    };
+
+    function fold(placholder="...") {
+      var editor = coq.provider.snippets[0].editor,
+          sel = editor.listSelections()[0];
+
+      if (emoji.hasOwnProperty(placholder))
+        placholder = emoji[placholder];
+
+      if (sel) {
+        var el = $('<span>').text(placholder),
+            from = sel.anchor, to = sel.head;
+
+        if (cursorLessThan(to, from)) [from, to] = [to, from];
+
+        var mark = editor.markText(from, to,
+          {replacedWith: el[0], clearOnEnter: true});
+
+        el.click(() => { editor.setCursor(from); editor.focus(); });
+        el.dblclick(() => mark.clear());
+      }
     }
 
     /* Global reference */

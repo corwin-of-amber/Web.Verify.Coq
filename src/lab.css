@@ -2,11 +2,12 @@
 #workspace {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100vh !important;
 }
 
 #workspace > .CodeMirror {
     flex-grow: 1;
+    flex-shrink: 1;
 }
 
 #header {

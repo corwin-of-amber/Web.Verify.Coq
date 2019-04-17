@@ -24,12 +24,13 @@
                        <span class="caption"></span></div>
       <div id="lab-menu">
         <ul class="resources">
-          <li data-filename="prelab/even-odd.v">  <b><i>Pre-lab:</i></b> <code>even-odd.v</code>  <button class="revert"></button> </li>
-          <li data-filename="lab2/vecn.v">        <b>Lab #2:</b>         <code>vecn.v</code>      <button class="revert"></button> </li>
-          <li data-filename="lab3/gcd.v">         <b>Lab #3:</b>         <code>gcd.v</code>       <button class="revert"></button> </li>
-          <li data-filename="lab4/mccarthy.v">    <b>Lab #4:</b>         <code>mccarthy.v</code>  <button class="revert"></button> </li>
-          <li data-filename="lab5/euclid.v">      <b>Lab #5:</b>         <code>euclid.v</code>    <button class="revert"></button> </li>
-          <li data-filename="lab5/hoare.v">       <b></b>                <code>hoare.v</code>     <button class="revert"></button> </li>
+          <li data-filename="prelab/even-odd.v">     <b><i>Pre-lab:</i></b> <code>even-odd.v</code>        <button class="revert"></button> </li>
+          <li data-filename="lab2/vecn.v">           <b>Lab #2:</b>         <code>vecn.v</code>            <button class="revert"></button> </li>
+          <li data-filename="lab3/gcd.v">            <b>Lab #3:</b>         <code>gcd.v</code>             <button class="revert"></button> </li>
+          <li data-filename="lab3/demo-prop-nat.v">  <b></b>                <code>demo-prop-nat.v</code>   <button class="revert"></button> </li>
+          <li data-filename="lab4/mccarthy.v">       <b>Lab #4:</b>         <code>mccarthy.v</code>        <button class="revert"></button> </li>
+          <li data-filename="lab5/euclid.v">         <b>Lab #5:</b>         <code>euclid.v</code>          <button class="revert"></button> </li>
+          <li data-filename="lab5/hoare.v">          <b></b>                <code>hoare.v</code>           <button class="revert"></button> </li>
         </ul>
         <hr/>
         <ul class="locals">
@@ -57,12 +58,13 @@
     var ssar = '../proofs/ssar';
 
     var lab_resources = {
-      'prelab/even-odd.v':  ssar + '/lab2/extra/demo-even-odd.v',
-      'lab2/vecn.v':        ssar + '/lab2/src/vecn.v',
-      'lab3/gcd.v':         ssar + '/lab3/src/gcd.v',
-      'lab4/mccarthy.v':    ssar + '/lab4/src/mccarthy.v',
-      'lab5/euclid.v':      ssar + '/lab5/src/euclid.v',
-      'lab5/hoare.v':       ssar + '/lab5/src/hoare.v'
+      'prelab/even-odd.v':     ssar + '/lab2/extra/demo-even-odd.v',
+      'lab2/vecn.v':           ssar + '/lab2/src/vecn.v',
+      'lab3/gcd.v':            ssar + '/lab3/src/gcd.v',
+      'lab3/demo-prop-nat.v':  ssar + '/lab3/extra/demo-prop-nat.v',
+      'lab4/mccarthy.v':       ssar + '/lab4/src/mccarthy.v',
+      'lab5/euclid.v':         ssar + '/lab5/src/euclid.v',
+      'lab5/hoare.v':          ssar + '/lab5/src/hoare.v'
     };
 
     var reset = false;
@@ -193,7 +195,11 @@
       ':eggplant:': '🍆',
       ':corn:':     '🌽',
       ':lolli:':    '🍭',
-      ':cookie:':   '🍪'
+      ':cookie:':   '🍪',
+      ':choc:':     '🍫',
+      ':doghnut':   '🍩',
+      ':coffee:':   '☕️',
+      ':beer':      '🍺'
     };
 
     function fold(placholder="...") {

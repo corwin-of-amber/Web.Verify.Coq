@@ -32,6 +32,8 @@
           <li data-filename="ex2/euclid.v">          <b></b>                <code>euclid.v</code>          <button class="revert"></button> </li>
           <li data-filename="ex2/bonus.v">           <b></b>                <code>bonus.v</code>           <button class="revert"></button> </li>
           <li data-filename="lab4/mccarthy.v">       <b>Lab #4:</b>         <code>mccarthy.v</code>        <button class="revert"></button> </li>
+          <li data-filename="lab4/demo-factorial.v"> <b></b>                <code>demo-factorial.v</code>  <button class="revert"></button> </li>
+          <li data-filename="lab4/demo-gcd.v">       <b></b>                <code>demo-gcd.v</code>        <button class="revert"></button> </li>
           <li data-filename="lab5/euclid.v">         <b>Lab #5:</b>         <code>euclid.v</code>          <button class="revert"></button> </li>
           <li data-filename="lab5/hoare.v">          <b></b>                <code>hoare.v</code>           <button class="revert"></button> </li>
         </ul>
@@ -66,6 +68,9 @@
       'lab3/gcd.v':            ssar + '/lab3/src/gcd.v',
       'lab3/demo-prop-nat.v':  ssar + '/lab3/extra/demo-prop-nat.v',
       'lab4/mccarthy.v':       ssar + '/lab4/src/mccarthy.v',
+      'lab4/mccarthy.v':       ssar + '/lab4/src/mccarthy.v',
+      'lab4/demo-factorial.v': ssar + '/lab4/extra/demo-factorial.v',
+      'lab4/demo-gcd.v':       ssar + '/lab4/extra/demo-gcd.v',
       'lab5/euclid.v':         ssar + '/lab5/src/euclid.v',
       'lab5/hoare.v':          ssar + '/lab5/src/hoare.v',
       'ex2/lists.v':           ssar + '/ex2/src/lists.v',
@@ -93,6 +98,10 @@
     function openResource(filename) {
       fetchResource(filename).then(txt => coq.provider.snippets[0].load(txt, filename));
       setCaption(filename);
+    }
+
+    function uploadResource(filename, local_filename=filename) {
+      fetchResource(filename).then(txt => coq.coq.put(local_filename, txt));
     }
 
     function openLocal(filename, default_filename) {
@@ -244,6 +253,8 @@
           else
             $('#header .caption').html('<i class="first-time">← open the lab menu</i>');
           setupMenu();
+
+          uploadResource("lab5/hoare.v", "hoare.v");  /* exercise contains Load command */
         });
 
     window.addEventListener('beforeunload', () => {

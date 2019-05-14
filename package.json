@@ -5,11 +5,18 @@
   "main": "src/sample.html",
   "dependencies": {
     "find": "^0.2.9",
-    "jquery": "^3.3.1",
-    "jszip": "^3.1.5",
+    "glob": "^7.1.3",
+    "jquery": "^3.4.0",
+    "jszip": "^3.2.1",
+    "lodash": "^4.17.11",
     "prelude-ls": "^1.1.2",
-    "prelude-ls-browser": "git+https://github.com/franklx/prelude-ls.git"
+    "prelude-ls-browser": "git+https://github.com/franklx/prelude-ls.git",
+    "vue": "^2.6.10"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "watchify": "^3.11.1"
+  },
+  "js-flags": "--stack-size=8192 --stack-trace-limit=100"
 }

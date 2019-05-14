@@ -29,11 +29,4 @@ class CoqAssistant
 
 
 
-if typeof Reload   # dev mode (Kremlin)
-  $ ->
-    $(document).keydown (ev) ->
-      if ev.metaKey && ev.keyCode == 82   # Cmd+R
-        Reload.reload!
-
-
 export CoqAssistant
